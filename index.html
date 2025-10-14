@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>분석 보윤석 (boonseok)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f5f6fa; color:#333; }
+    .container { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+    h1 { margin-bottom: 8px; }
+    .note { color:#666; margin-bottom: 24px; }
+    .section { background:#fff; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.06); padding: 20px; margin-bottom: 20px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+    .controls { display:flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; align-items: center; }
+    select, button { padding: 8px 10px; border-radius: 8px; border:1px solid #d7dce3; background:#fff; }
+    button { background:#667eea; color:#fff; border:0; cursor:pointer; }
+    button.secondary { background:#c9d1e9; color:#233; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid #eee; text-align: left; }
+    th { background:#f7f8fb; }
+    .pill { display:inline-block; padding: 2px 8px; border-radius: 16px; background:#eef; color:#334; font-size: 12px; }
+    .muted { color:#666; }
+    .list { max-height: 360px; overflow:auto; }
+    .tag { display:inline-block; padding:2px 6px; margin:2px; background:#eef3ff; border-radius: 10px; font-size: 12px; }
+    
+    /* 비밀번호 보호 스타일 */
+    .password-section { background:#fff; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.06); padding: 24px; margin-bottom: 20px; text-align: center; }
+    .password-input { padding: 10px 15px; border: 2px solid #667eea; border-radius: 8px; font-size: 16px; width: 200px; margin-right: 10px; }
+    .password-button { padding: 10px 20px; background:#667eea; color:#fff; border:0; border-radius: 8px; font-size: 16px; cursor:pointer; }
+    .password-button:hover { background:#5a6fd8; }
+    .password-error { color: #ff6b6b; margin-top: 10px; display: none; }
+    .password-success { color: #4ecdc4; margin-top: 10px; display: none; }
+    .protected-content { display: none; }
+    .protected-content.unlocked { display: block; }
+    .blur-content { filter: blur(5px); pointer-events: none; user-select: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>분석 보윤석</h1>
+    <div class="note">세 가지 분석(하위그룹, 문항수준, 내용분석)을 일괄 실행합니다. <span id="participant-info" style="color: #667eea; font-weight: bold;"></span></div>
+
+    <!-- 비밀번호 입력 섹션 -->
+    <div class="password-section" id="passwordSection">
+      <h2>🔒 주관식 답변 보호</h2>
+      <p style="color: #666; margin-bottom: 20px;">주관식 답변을 보시려면 비밀번호를 입력하세요.</p>
+      <div>
+        <input type="password" id="passwordInput" class="password-input" placeholder="비밀번호 입력" />
+        <button class="password-button" onclick="checkPassword()">확인</button>
+      </div>
+      <div id="passwordError" class="password-error">❌ 비밀번호가 올바르지 않습니다.</div>
+      <div id="passwordSuccess" class="password-success">✅ 인증되었습니다! 주관식 답변을 볼 수 있습니다.</div>
+    </div>
+
+    <div class="section" id="statusBox">
+      <div id="statusText">Firebase에서 데이터를 불러오는 중...</div>
+    </div>
+
+    <div class="section">
+      <h2>방법 1. 하위그룹 분석 (Subgroup Analysis)</h2>
+      <div class="controls">
+        <label>그룹 기준:
+          <select id="subgroup-dimension">
+            <option value="external_internal">전략1: 자존감의 원천 (외적동기 vs 내적동기)</option>
+            <option value="personality">전략2: 기본성격 (낙관 vs 신중/냉소)</option>
+            <option value="emotion_style">전략3: 감정표현 (억제/내면화 vs 즉시/솔직)</option>
+          </select>
+        </label>
+        <label>사후 파장:
+          <select id="subgroup-postwave">
+            <option value="fourth">4차</option>
+            <option value="third">3차</option>
+          </select>
+        </label>
+        <button id="runSubgroup">분석 실행</button>
+      </div>
+      <div class="grid">
+        <div>
+          <canvas id="subgroupDeltaChart" style="margin-bottom:16px;"></canvas>
+          <canvas id="subgroupPrePostChart"></canvas>
+        </div>
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th>카테고리</th>
+                <th id="sub-hA">그룹A Δ평균</th>
+                <th id="sub-hB">그룹B Δ평균</th>
+                <th>t(웰치)</th>
+                <th>df</th>
+                <th>p(양측)</th>
+              </tr>
+            </thead>
+            <tbody id="subgroupTable"></tbody>
+          </table>
+          <div style="height:12px;"></div>
+          <table>
+            <thead>
+              <tr>
+                <th>카테고리</th>
+                <th id="sub-hA-pre">그룹A 1차</th>
+                <th id="sub-hA-post">그룹A 사후</th>
+                <th id="sub-hB-pre">그룹B 1차</th>
+                <th id="sub-hB-post">그룹B 사후</th>
+              </tr>
+            </thead>
+            <tbody id="subgroupPrePostTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>방법 2. 문항수준 분석 (Item-level Analysis)</h2>
+      <div class="controls">
+        <label>척도 선택:
+          <select id="item-scale">
+            <option value="자기 수용">자기 수용</option>
+            <option value="내적 매력 인지 명확성">내적 매력 인지 명확성</option>
+            <option value="관계적 자신감">관계적 자신감</option>
+            <option value="로젠버그 자아존중감 척도">로젠버그 자아존중감 척도</option>
+            <option value="일반적 자기효능감 척도">일반적 자기효능감 척도</option>
+          </select>
+        </label>
+        <label>사후 파장:
+          <select id="item-postwave">
+            <option value="fourth">4차</option>
+            <option value="third">3차</option>
+          </select>
+        </label>
+        <button id="runItem">분석 실행</button>
+      </div>
+      <div class="grid">
+        <div style="min-height: 600px;">
+          <canvas id="itemBarChart" style="height: 100%; min-height: 600px;"></canvas>
+        </div>
+        <div>
+          <div class="list" id="itemInsights"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>방법 3. 1차-4차 대응표본 비교분석 (Paired Sample Analysis)</h2>
+      <div class="note">1차와 4차 설문 결과를 직접 비교하여 대응표본 T검정과 Cohen's d 효과크기를 계산합니다.</div>
+      <div class="controls">
+        <button id="runPairedAnalysis">1차-4차 대응표본 분석 실행</button>
+        <button class="secondary" id="exportPairedResults">결과 내보내기</button>
+      </div>
+      <div class="grid">
+        <div>
+          <canvas id="pairedComparisonChart" style="margin-bottom:16px;"></canvas>
+          <canvas id="pairedEffectSizeChart"></canvas>
+        </div>
+        <div>
+          <div>
+            <h3>개별 참가자 변화</h3>
+            <div class="list" id="individualChanges"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 대응표본 T검정 결과 표를 차트 아래로 이동 -->
+      <div style="margin-top: 24px;">
+        <h3>대응표본 T검정 결과</h3>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>척도</th>
+                <th>1차 평균(SD)</th>
+                <th>4차 평균(SD)</th>
+                <th>평균차이</th>
+                <th>t값</th>
+                <th>df</th>
+                <th>p값</th>
+                <th>Cohen's d</th>
+                <th>효과크기</th>
+              </tr>
+            </thead>
+            <tbody id="pairedTTestTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>방법 4. 2차 설문 응답 분석 (프로그램 종료 직후)</h2>
+      <div class="note">2차 설문의 만족도 및 평가 문항 분석</div>
+      <div class="controls">
+        <button id="runSecondAnalysis">2차 설문 분석 실행</button>
+      </div>
+      <div class="grid">
+        <div>
+          <canvas id="secondSurveyChart"></canvas>
+        </div>
+        <div>
+          <div>
+            <h3>통계 요약</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>질문</th>
+                  <th>평균</th>
+                  <th>표준편차</th>
+                  <th>최소</th>
+                  <th>최대</th>
+                </tr>
+              </thead>
+              <tbody id="secondStatsTable"></tbody>
+            </table>
+          </div>
+          <div style="margin-top: 16px;" class="protected-content">
+            <h3>긍정적 경험 및 깨달음 (주관식)</h3>
+            <div class="list" id="secondExperiencesList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>방법 5. 3차 설문 응답 분석 (3주 후)</h2>
+      <div class="note">3차 설문의 추적 질문 및 주관식 응답 분석</div>
+      <div class="controls">
+        <button id="runThirdAnalysis">3차 설문 분석 실행</button>
+      </div>
+      <div class="grid">
+        <div>
+          <canvas id="thirdSurveyChart"></canvas>
+        </div>
+        <div>
+          <div>
+            <h3>통계 요약 (Q1~Q5)</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>질문</th>
+                  <th>평균</th>
+                  <th>표준편차</th>
+                  <th>최소</th>
+                  <th>최대</th>
+                </tr>
+              </thead>
+              <tbody id="thirdStatsTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 16px;" class="protected-content">
+        <h3>주관식 응답</h3>
+        <div class="grid">
+          <div>
+            <h4>Q6, Q7: 최근 3주 긍정적 변화/경험</h4>
+            <div class="list" id="thirdQ6Q7List"></div>
+          </div>
+          <div>
+            <h4>Q10~Q12: 자유서술</h4>
+            <div class="list" id="thirdQ10Q12List"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 비밀번호 확인 함수
+    function checkPassword() {
+      const input = document.getElementById('passwordInput');
+      const password = input.value;
+      const errorMsg = document.getElementById('passwordError');
+      const successMsg = document.getElementById('passwordSuccess');
+      const protectedContents = document.querySelectorAll('.protected-content');
+      const passwordSection = document.getElementById('passwordSection');
+      
+      if (password === '0515') {
+        // 비밀번호 정확
+        errorMsg.style.display = 'none';
+        successMsg.style.display = 'block';
+        
+        // 주관식 답변 잠금 해제
+        protectedContents.forEach(content => {
+          content.classList.add('unlocked');
+        });
+        
+        // 비밀번호 섹션 숨기기
+        setTimeout(() => {
+          passwordSection.style.display = 'none';
+        }, 1500);
+        
+        // 로컬 스토리지에 저장 (새로고침해도 유지)
+        localStorage.setItem('qualitativeUnlocked', 'true');
+      } else {
+        // 비밀번호 오류
+        errorMsg.style.display = 'block';
+        successMsg.style.display = 'none';
+        input.value = '';
+        input.focus();
+      }
+    }
+    
+    // Enter 키로 비밀번호 확인
+    document.addEventListener('DOMContentLoaded', () => {
+      const input = document.getElementById('passwordInput');
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          checkPassword();
+        }
+      });
+      
+      // 페이지 로드 시 저장된 인증 상태 확인
+      if (localStorage.getItem('qualitativeUnlocked') === 'true') {
+        const protectedContents = document.querySelectorAll('.protected-content');
+        protectedContents.forEach(content => {
+          content.classList.add('unlocked');
+        });
+        document.getElementById('passwordSection').style.display = 'none';
+      }
+    });
+  </script>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
