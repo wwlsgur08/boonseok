@@ -453,6 +453,18 @@ function runSubgroup() {
             }
           }
         },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) {
+                label += ': ';
+              }
+              label += context.parsed.y.toFixed(2);
+              return label;
+            }
+          }
+        },
         datalabels: {
           display: true,
           anchor: 'end',
@@ -527,6 +539,18 @@ function runSubgroup() {
           labels: {
             font: {
               size: window.innerWidth < 768 ? 9 : 11
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) {
+                label += ': ';
+              }
+              label += context.parsed.y.toFixed(2);
+              return label;
             }
           }
         }
@@ -932,6 +956,18 @@ function updatePairedComparisonChart(labels, preData, postData) {
         title: {
           display: true,
           text: '1차-4차 척도별 평균 비교'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) {
+                label += ': ';
+              }
+              label += context.parsed.y.toFixed(2);
+              return label;
+            }
+          }
         }
       }
     },
@@ -991,6 +1027,13 @@ function updatePairedEffectSizeChart(labels, cohenData) {
         },
         legend: {
           display: true
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return "Cohen's d: " + context.parsed.y.toFixed(2);
+            }
+          }
         }
       }
     }
@@ -1130,6 +1173,13 @@ function runSecondAnalysis() {
           display: true,
           text: `2차 설문 평균 점수 (N=${secondData.length}, 1-4차 완전 응답자)`
         },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return '평균: ' + context.parsed.y.toFixed(2);
+            }
+          }
+        },
         datalabels: {
           anchor: 'end',
           align: 'top',
@@ -1243,6 +1293,13 @@ function runThirdAnalysis() {
           display: true,
           text: `3차 설문 평균 점수 (Q1~Q5) (N=${thirdData.length}, 1-4차 완전 응답자)`
         },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return '평균: ' + context.parsed.y.toFixed(2);
+            }
+          }
+        },
         datalabels: {
           anchor: 'end',
           align: 'top',
@@ -1348,3 +1405,5 @@ loadAll().catch(err => {
   console.error(err);
   updateStatus('데이터 로드 오류: ' + err.message);
 });
+
+
