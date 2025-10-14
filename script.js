@@ -416,9 +416,9 @@ function runSubgroup() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${cat}</td>
-      <td>${isNaN(mA)?'-':mA.toFixed(3)}</td>
-      <td>${isNaN(mB)?'-':mB.toFixed(3)}</td>
-      <td>${isNaN(stats.t)?'-':stats.t.toFixed(3)}</td>
+      <td>${isNaN(mA)?'-':mA.toFixed(2)}</td>
+      <td>${isNaN(mB)?'-':mB.toFixed(2)}</td>
+      <td>${isNaN(stats.t)?'-':stats.t.toFixed(2)}</td>
       <td>${isNaN(stats.df)?'-':stats.df.toFixed(1)}</td>
       <td>${isNaN(stats.p)?'-':stats.p.toFixed(4)}</td>
     `;
@@ -446,17 +446,24 @@ function runSubgroup() {
       responsive:true, 
       scales:{ y:{ beginAtZero:true } },
       plugins: {
+        legend: {
+          labels: {
+            font: {
+              size: window.innerWidth < 768 ? 10 : 12
+            }
+          }
+        },
         datalabels: {
           display: true,
           anchor: 'end',
           align: 'top',
           color: '#333',
           font: {
-            size: 10,
+            size: window.innerWidth < 768 ? 9 : 10,
             weight: 'bold'
           },
           formatter: function(value, context) {
-            return value.toFixed(3);
+            return value.toFixed(2);
           }
         }
       }
@@ -477,10 +484,10 @@ function runSubgroup() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${cat}</td>
-      <td>${isNaN(preMeansA[cat])?'-':preMeansA[cat].toFixed(3)}</td>
-      <td>${isNaN(postMeansA[cat])?'-':postMeansA[cat].toFixed(3)}</td>
-      <td>${isNaN(preMeansB[cat])?'-':preMeansB[cat].toFixed(3)}</td>
-      <td>${isNaN(postMeansB[cat])?'-':postMeansB[cat].toFixed(3)}</td>
+      <td>${isNaN(preMeansA[cat])?'-':preMeansA[cat].toFixed(2)}</td>
+      <td>${isNaN(postMeansA[cat])?'-':postMeansA[cat].toFixed(2)}</td>
+      <td>${isNaN(preMeansB[cat])?'-':preMeansB[cat].toFixed(2)}</td>
+      <td>${isNaN(postMeansB[cat])?'-':postMeansB[cat].toFixed(2)}</td>
     `;
     t2.appendChild(tr);
   });
@@ -512,7 +519,19 @@ function runSubgroup() {
         { label: `${nameB} ${postLabel}`, data: cats.map(c=>postMeansB[c]), backgroundColor:'#4ecdc4' },
       ]
     },
-    options: { responsive:true, scales:{ y:{ beginAtZero:true, max:4 } } }
+    options: { 
+      responsive:true, 
+      scales:{ y:{ beginAtZero:true, max:4 } },
+      plugins: {
+        legend: {
+          labels: {
+            font: {
+              size: window.innerWidth < 768 ? 9 : 11
+            }
+          }
+        }
+      }
+    }
   });
 }
 
@@ -607,40 +626,46 @@ function runItem() {
       maintainAspectRatio: false,
       indexAxis:'y', 
       scales:{ 
-        x:{ beginAtZero:true, max:4 },
+        x:{ 
+          beginAtZero:true, 
+          max:4,
+          ticks: {
+            font: {
+              size: window.innerWidth < 768 ? 9 : 11
+            }
+          }
+        },
         y: {
           ticks: {
             font: {
-              size: 11
+              size: window.innerWidth < 768 ? 8 : 11
             },
             maxRotation: 0,
             minRotation: 0,
-            padding: 8,
+            padding: window.innerWidth < 768 ? 4 : 8,
             autoSkip: false
           }
         }
       },
       layout: {
         padding: {
-          left: 10,
-          right: 30,
+          left: window.innerWidth < 768 ? 5 : 10,
+          right: window.innerWidth < 768 ? 15 : 30,
           top: 10,
           bottom: 10
         }
       },
       plugins: {
-        datalabels: {
-          display: true,
-          anchor: 'end',
-          align: 'right',
-          color: '#333',
-          font: {
-            size: 10,
-            weight: 'bold'
-          },
-          formatter: function(value, context) {
-            return value.toFixed(3);
+        legend: {
+          display: window.innerWidth >= 768,
+          labels: {
+            font: {
+              size: window.innerWidth < 768 ? 9 : 12
+            }
           }
+        },
+        datalabels: {
+          display: false
         }
       }
     }
@@ -844,21 +869,21 @@ function runPairedAnalysis() {
 function updatePairedTTestTable(results) {
   const tbody = document.getElementById('pairedTTestTable');
   tbody.innerHTML = '';
-  
+
   results.forEach(result => {
     const row = tbody.insertRow();
     row.innerHTML = `
       <td>${result.category}</td>
-      <td>${result.meanPre.toFixed(3)} (${result.sdPre.toFixed(3)})</td>
-      <td>${result.meanPost.toFixed(3)} (${result.sdPost.toFixed(3)})</td>
-      <td>${result.meanDiff.toFixed(3)}</td>
-      <td>${result.tValue.toFixed(3)}</td>
+      <td>${result.meanPre.toFixed(2)} (${result.sdPre.toFixed(2)})</td>
+      <td>${result.meanPost.toFixed(2)} (${result.sdPost.toFixed(2)})</td>
+      <td>${result.meanDiff.toFixed(2)}</td>
+      <td>${result.tValue.toFixed(2)}</td>
       <td>${result.df}</td>
       <td>${result.pValue < 0.001 ? '<0.001' : result.pValue.toFixed(3)}</td>
-      <td>${result.cohensD.toFixed(3)}</td>
+      <td>${result.cohensD.toFixed(2)}</td>
       <td>${result.effectSizeInterpretation}</td>
     `;
-    
+
     // p값에 따른 행 스타일
     if (result.pValue < 0.05) {
       row.style.backgroundColor = '#f0f8ff';
@@ -995,8 +1020,8 @@ function updateIndividualChanges(commonNicks, firstMap, fourthMap) {
     
     div.innerHTML = `
       <strong>${nick}</strong>: 
-      1차 ${firstAvg.toFixed(3)} → 4차 ${fourthAvg.toFixed(3)} 
-      (변화: ${change > 0 ? '+' : ''}${change.toFixed(3)})
+      1차 ${firstAvg.toFixed(2)} → 4차 ${fourthAvg.toFixed(2)} 
+      (변화: ${change > 0 ? '+' : ''}${change.toFixed(2)})
     `;
     
     container.appendChild(div);
@@ -1015,15 +1040,15 @@ function exportPairedResults() {
   window.pairedAnalysisResults.forEach(result => {
     rows.push([
       result.category,
-      result.meanPre.toFixed(3),
-      result.sdPre.toFixed(3),
-      result.meanPost.toFixed(3),
-      result.sdPost.toFixed(3),
-      result.meanDiff.toFixed(3),
-      result.tValue.toFixed(3),
+      result.meanPre.toFixed(2),
+      result.sdPre.toFixed(2),
+      result.meanPost.toFixed(2),
+      result.sdPost.toFixed(2),
+      result.meanDiff.toFixed(2),
+      result.tValue.toFixed(2),
       result.df,
       result.pValue.toFixed(6),
-      result.cohensD.toFixed(3),
+      result.cohensD.toFixed(2),
       result.effectSizeInterpretation
     ]);
   });
