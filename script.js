@@ -689,7 +689,18 @@ function runItem() {
           }
         },
         datalabels: {
-          display: false
+          display: true,
+          anchor: 'end',
+          align: 'end',
+          offset: 4,
+          color: '#333',
+          font: {
+            size: window.innerWidth < 768 ? 0 : 9,
+            weight: 'bold'
+          },
+          formatter: function(value, context) {
+            return window.innerWidth < 768 ? '' : value.toFixed(2);
+          }
         }
       }
     }
@@ -698,8 +709,8 @@ function runItem() {
   const box = document.getElementById('itemInsights');
   const top = rows[0]; const bottom = rows[rows.length-1];
   box.innerHTML = '';
-  if (top) box.innerHTML += `<div><b>가장 크게 상승</b>: “${top.question}” <span class="pill">Δ ${top.delta.toFixed(3)}</span></div>`;
-  if (bottom) box.innerHTML += `<div><b>가장 적게 변화</b>: “${bottom.question}” <span class="pill">Δ ${bottom.delta.toFixed(3)}</span></div>`;
+  if (top) box.innerHTML += `<div><b>가장 크게 상승</b>: “${top.question}” <span class="pill">Δ ${top.delta.toFixed(2)}</span></div>`;
+  if (bottom) box.innerHTML += `<div><b>가장 적게 변화</b>: “${bottom.question}” <span class="pill">Δ ${bottom.delta.toFixed(2)}</span></div>`;
 }
 
 // -------------------- 방법 3: 내용분석 --------------------
@@ -1405,5 +1416,6 @@ loadAll().catch(err => {
   console.error(err);
   updateStatus('데이터 로드 오류: ' + err.message);
 });
+
 
 
